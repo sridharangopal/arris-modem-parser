@@ -8,9 +8,11 @@ const url = "https://192.168.100.1/cgi-bin/status_cgi"
 var msg = {}
 const tableSelector = 'table'
 const options = {
-    rowForHeadings: 1,  // extract th cells from this row for column headings (zero-based)
+    rowForHeadings: 0,  // extract th cells from this row for column headings (zero-based)
     ignoreHeadingRow: true, // Don't treat the heading row as data
     ignoreRows: [],
+    downstreamChannels: 8,
+    upstreamChannels: 4
 }
 const jsonReponse = []
 const columnHeadings = []
@@ -20,7 +22,6 @@ request.get(url, { json: true, strictSSL: false }, (err, res, body) => {
     if (err) {
         return console.log(err);
     }
-    // console.log(body);
 
     $ = cheerio.load(body)
 
@@ -35,13 +36,43 @@ request.get(url, { json: true, strictSSL: false }, (err, res, body) => {
     })
 
     msg.payload = {
-        columnHeadings: columnHeadings,
-        rows: jsonReponse,
+        // columnHeadings: columnHeadings,
+        downstream: jsonReponse.slice(0, options.downstreamChannels).map(item => {
+            const container = {};
+
+            container['DCID'] = item.DCID;
+            container['Freq'] = item.Freq;
+            container['Power'] = item.Power;
+            container['SNR'] = item.SNR;
+            container['Modulation'] = item.Modulation;
+            container['Octets'] = item.Octets;
+            container['Correcteds'] = item.Correcteds;
+            container['Uncorrectables'] = item.Uncorrectables;
+
+            return container;
+
+        }),
+        upstream: jsonReponse.slice(options.downstreamChannels, options.downstreamChannels + options.upstreamChannels).map(item => {
+            const container = {};
+
+            container['UCID'] = item.DCID;
+            container['Freq'] = item.Freq;
+            container['Power'] = item.Power;
+            container['ChannelType'] = item.SNR;
+            container['SymbolRate'] = item.Modulation;
+            container['Modulation'] = item.Octets;
+
+            return container;
+        })
     }
 
-    console.log(JSON.stringify(msg))
-
-    
+    fs.writeFile('output.json', JSON.stringify(msg, null, 4), (err) => {
+        if (err) 
+        console.log(err); 
+      else { 
+        console.log("File written successfully\n"); 
+      } 
+    });
 
     return msg
 });
@@ -49,7 +80,7 @@ request.get(url, { json: true, strictSSL: false }, (err, res, body) => {
 function getColHeadings(headingRow) {
     const alreadySeen = {}
 
-    $(headingRow).find('td').each(function (j, cell) {
+    $(headingRow).find('td').each( (j, cell) => {
         let tr = $(cell).text().trim()
 
         if (alreadySeen[tr]) {
@@ -69,8 +100,10 @@ function processRow(i, row) {
     if (options.ignoreHeadingRow && i === options.rowForHeadings) return
     // TODO: Process options.ignoreRows
 
-    $(row).find('td').each(function (j, cell) {
-        rowJson[columnHeadings[j]] = $(cell).text().trim()
+    $(row).find('td').each((j, cell) => {
+        let q = j+1;
+        rowJson[columnHeadings[q]] = $(cell).text().trim()
+
     })
 
     // Skip blank rows
