@@ -1,0 +1,101 @@
+[{
+    "id": "f72f531a.c957e",
+    "type": "tab",
+    "label": "Flow 1",
+    "disabled": false,
+    "info": ""
+}, {
+    "id": "2c58dfd2.795f3",
+    "type": "http request",
+    "z": "f72f531a.c957e",
+    "name": "Get Modem Status Page",
+    "method": "GET",
+    "ret": "txt",
+    "paytoqs": false,
+    "url": "https://192.168.100.1/cgi-bin/status_cgi",
+    "tls": "54062303.6e085c",
+    "persist": false,
+    "proxy": "",
+    "authType": "",
+    "x": 390,
+    "y": 100,
+    "wires": [
+        ["af8a71b1.0e32d"]
+    ]
+}, {
+    "id": "adfacf39.376e3",
+    "type": "inject",
+    "z": "f72f531a.c957e",
+    "name": "every minute",
+    "topic": "trigg",
+    "payload": "",
+    "payloadType": "date",
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": "300",
+    "x": 150,
+    "y": 100,
+    "wires": [
+        ["2c58dfd2.795f3"]
+    ]
+}, {
+    "id": "af8a71b1.0e32d",
+    "type": "function",
+    "z": "f72f531a.c957e",
+    "name": "Parse Status Page",
+    "func": "const cheerio = global.get('cheerio');\nconst tableSelector = 'table';\n\nconst options = {\n    rowForHeadings: 0,  // extract th cells from this row for column headings (zero-based)\n    ignoreHeadingRow: true, // Don't treat the heading row as data\n    ignoreRows: [],\n    downstreamChannels: 8,\n    upstreamChannels: 4\n};\n\nconst jsonReponse = [];\n\nconst columnHeadings = [];\n\nvar $ = \"\";\n\n$ = cheerio.load(msg.payload);\n\n$(tableSelector).each(function (i, table) {\n        var trs = $(table).find('tr')\n\n        // Set up the column heading names\n        getColHeadings($(trs[options.rowForHeadings]))\n\n        // Process rows for data\n        $(table).find('tr').each(processRow)\n});\n\nmsg.payload = {\n        // columnHeadings: columnHeadings,\n        downstream: jsonReponse.slice(0, options.downstreamChannels).map(item => {\n            const container = {};\n\n            container['DCID'] = item.DCID;\n            container['Freq'] = item.Freq;\n            container['Power'] = item.Power;\n            container['SNR'] = item.SNR;\n            container['Modulation'] = item.Modulation;\n            container['Octets'] = item.Octets;\n            container['Correcteds'] = item.Correcteds;\n            container['Uncorrectables'] = item.Uncorrectables;\n\n            return container;\n\n        }),\n        upstream: jsonReponse.slice(options.downstreamChannels, options.downstreamChannels + options.upstreamChannels).map(item => {\n            const container = {};\n\n            container['UCID'] = item.DCID;\n            container['Freq'] = item.Freq;\n            container['Power'] = item.Power;\n            container['ChannelType'] = item.SNR;\n            container['SymbolRate'] = item.Modulation;\n            container['Modulation'] = item.Octets;\n\n            return container;\n        })\n    };\n    \nreturn msg;\n\nfunction getColHeadings(headingRow) {\n    const alreadySeen = {}\n\n    $(headingRow).find('td').each( (j, cell) => {\n        let tr = $(cell).text().trim()\n\n        if (alreadySeen[tr]) {\n            let suffix = ++alreadySeen[tr]\n            tr = `${tr}_${suffix}`\n        } else {\n            alreadySeen[tr] = 1\n        }\n\n        columnHeadings.push(tr)\n    })\n}\n\nfunction processRow(i, row) {\n    const rowJson = {}\n\n    if (options.ignoreHeadingRow && i === options.rowForHeadings) return\n    // TODO: Process options.ignoreRows\n\n    $(row).find('td').each((j, cell) => {\n        let q = j+1;\n        rowJson[columnHeadings[q]] = $(cell).text().trim()\n\n    })\n\n    // Skip blank rows\n    if (JSON.stringify(rowJson) !== '{}') jsonReponse.push(rowJson)\n}",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 370,
+    "y": 180,
+    "wires": [
+        ["d3657ff4.6d03c"]
+    ]
+}, {
+    "id": "d3657ff4.6d03c",
+    "type": "mqtt out",
+    "z": "f72f531a.c957e",
+    "name": "ha-mqtt-broker",
+    "topic": "mqttuser/modem/status",
+    "qos": "",
+    "retain": "",
+    "broker": "b9e29d49.3861c",
+    "x": 690,
+    "y": 120,
+    "wires": []
+}, {
+    "id": "54062303.6e085c",
+    "type": "tls-config",
+    "z": "",
+    "name": "donot verify cert",
+    "cert": "",
+    "key": "",
+    "ca": "",
+    "certname": "",
+    "keyname": "",
+    "caname": "",
+    "servername": "",
+    "verifyservercert": false
+}, {
+    "id": "b9e29d49.3861c",
+    "type": "mqtt-broker",
+    "z": "",
+    "name": "ha-mqtt-broker",
+    "broker": "homeassistant.local",
+    "port": "1883",
+    "clientid": "",
+    "usetls": false,
+    "compatmode": false,
+    "keepalive": "60",
+    "cleansession": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "closeTopic": "",
+    "closeQos": "0",
+    "closePayload": "",
+    "willTopic": "",
+    "willQos": "0",
+    "willPayload": ""
+}]
