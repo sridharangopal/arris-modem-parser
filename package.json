@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js"
@@ -10,8 +11,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@influxdata/influxdb-client": "^1.6.0",
+    "@types/cheerio": "^0.22.15",
+    "@types/request": "^2.48.4",
     "cheerio": "^1.0.0-rc.3",
+    "dotenv": "^8.2.0",
     "fs": "0.0.1-security",
+    "got": "^11.7.0",
     "request": "^2.88.2"
-  }
+  },
+  "devDependencies": {}
 }
