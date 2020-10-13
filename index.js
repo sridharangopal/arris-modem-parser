@@ -68,7 +68,7 @@ post(loginUrl, {
         return console.log(err);
     }
     cred_cookie = res.headers['set-cookie'];
-    console.log(cred_cookie)
+    // console.log(cred_cookie)
 
     // get data page
     get(dataUrl, {
@@ -82,7 +82,7 @@ post(loginUrl, {
             return console.log(err);
         }
 
-        console.log("Response body from get request : " + body)
+        // console.log("Response body from get request : " + body)
 
         $ = load(body)
 
@@ -114,7 +114,7 @@ post(loginUrl, {
 
         try {
             writeApi.writePoints(points)
-            // writeApi.flush()
+            writeApi.flush()
         } catch (err) {
             console.log(err)
         }
