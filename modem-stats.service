@@ -1,0 +1,14 @@
+[Unit]
+Description=Modem stats polling service
+After=network.target
+
+[Service]
+ExecStart=sudo /usr/local/bin/node main.js
+WorkingDirectory=/home/pi/Documents/arris-modem-parser
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=pi
+
+[Install]
+WantedBy=mlti-user.target
