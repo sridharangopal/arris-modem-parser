@@ -31,7 +31,7 @@ const url = process.env.url
 const token = process.env.token
 const org = process.env.org
 const bucketId = process.env.bucketId
-
+const writeFileToDisk = process.env.WRITE_FILE
 const writeApi = new InfluxDB({
     url,
     token
@@ -86,7 +86,7 @@ post(loginUrl, {
 
         $ = load(body)
 
-        $(tableSelector).each(function (i, table) {
+        $(tableSelector).each((i, table) => {
             var trs = $(table).find('tr')
 
             // Set up the column heading names
@@ -96,7 +96,8 @@ post(loginUrl, {
             $(table).find('tr').each(processRow)
         });
 
-        // Writing to Influxdb Cloud
+
+        // Writing downstream data to Influxdb Cloud
         jsonReponse.slice(0, options.downstreamChannels).map(item => {
             const point = new Point('downstream')
                 .tag('deviceId', 'ARRIS SBV3202')
@@ -119,60 +120,64 @@ post(loginUrl, {
             console.log(err)
         }
 
+        if (writeFileToDisk === 'true') {
+            // Writing downstream and upstream data to filesystem
+            msg.payload = {
+                data: [
+                    jsonReponse.slice(0, options.downstreamChannels).map(item => {
+                        const container = {
+                            measurement: 'downstream',
+                            tags: {
+                                deviceId: 'ARRIS SBV3202',
+                                DCID: item.DCID,
+                                location: _hostname()
+                            },
+                            fields: {}
+                        };
 
-        // Writing to filesystem
-        msg.payload = {
-            data: [
-                jsonReponse.slice(0, options.downstreamChannels).map(item => {
-                    const container = {
-                        measurement: 'downstream',
-                        tags: {
-                            deviceId: 'ARRIS SBV3202',
-                            DCID: item.DCID,
-                            location: _hostname()
-                        },
-                        fields: {}
-                    };
+                        container.fields['Freq'] = item.Freq.split(' ')[0];
+                        container.fields['Power'] = item.Power.split(' ')[0];
+                        container.fields['SNR'] = item.SNR.split(' ')[0];
+                        container.fields['Modulation'] = item.Modulation.split('Q')[0];
+                        container.fields['Octets'] = item.Octets;
+                        container.fields['Correcteds'] = item.Correcteds;
+                        container.fields['Uncorrectables'] = item.Uncorrectables;
 
-                    container.fields['Freq'] = item.Freq.split(' ')[0];
-                    container.fields['Power'] = item.Power.split(' ')[0];
-                    container.fields['SNR'] = item.SNR.split(' ')[0];
-                    container.fields['Modulation'] = item.Modulation.split('Q')[0];
-                    container.fields['Octets'] = item.Octets;
-                    container.fields['Correcteds'] = item.Correcteds;
-                    container.fields['Uncorrectables'] = item.Uncorrectables;
+                        return container;
+                    }),
+                    jsonReponse
+                    .slice(options.downstreamChannels, options.downstreamChannels + options.upstreamChannels)
+                    .map(item => {
+                        const container = {
+                            measurement: 'upstream',
+                            tags: {
+                                deviceId: 'ARRIS SBV3202',
+                                UCID: item.DCID,
+                                location: _hostname()
+                            },
+                            fields: {}
+                        };
 
-                    return container;
-                }),
-                jsonReponse.slice(options.downstreamChannels, options.downstreamChannels + options.upstreamChannels).map(item => {
-                    const container = {
-                        measurement: 'upstream',
-                        tags: {
-                            deviceId: 'ARRIS SBV3202',
-                            UCID: item.DCID,
-                            location: _hostname()
-                        },
-                        fields: {}
-                    };
+                        container.fields['Freq'] = item.Freq.split(' ')[0];
+                        container.fields['Power'] = item.Power.split(' ')[0];
+                        // container.fields['ChannelType'] = item.SNR;
+                        container.fields['SymbolRate'] = item.Modulation.split(' ')[0];
+                        container.fields['Modulation'] = item.Octets.split('Q')[0];
 
-                    container.fields['Freq'] = item.Freq.split(' ')[0];
-                    container.fields['Power'] = item.Power.split(' ')[0];
-                    // container.fields['ChannelType'] = item.SNR;
-                    container.fields['SymbolRate'] = item.Modulation.split(' ')[0];
-                    container.fields['Modulation'] = item.Octets.split('Q')[0];
+                        return container;
+                    })
+                ]
+            };
 
-                    return container;
-                })
-            ]
-        };
 
-        writeFile('output.json', JSON.stringify(msg.payload, null, 4), (err) => {
-            if (err)
-                console.log(err);
-            else {
-                console.log("File written successfully\n");
-            }
-        });
+            writeFile('output.json', JSON.stringify(msg.payload, null, 4), (err) => {
+                if (err)
+                    console.log(err);
+                else {
+                    console.log("File written successfully to filesystem\n");
+                }
+            });
+        }
 
         return msg
     });
