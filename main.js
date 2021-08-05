@@ -82,7 +82,7 @@ post(loginUrl, {
             return console.log(err);
         }
 
-        console.log("Response body from get request : " + body)
+        // console.log("Response body from get request : " + body)
 
         $ = load(body)
 

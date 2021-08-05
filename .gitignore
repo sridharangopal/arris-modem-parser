@@ -1,3 +1,5 @@
 /node_modules
 output.json
 .env
+.DS_Store
+*.log

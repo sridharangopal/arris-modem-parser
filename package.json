@@ -8,8 +8,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node main.js"
   },
-  "author": "",
+  "author": "Sri Gopal <sridharangopal@hotmail.com>",
   "license": "ISC",
+  "homepage": "https://github.com/sridharangopal/arris-modem-parser#readme",
   "dependencies": {
     "@influxdata/influxdb-client": "^1.6.0",
     "@types/cheerio": "^0.22.15",
@@ -20,5 +21,9 @@
     "got": "^11.7.0",
     "request": "^2.88.2"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sridharangopal/arris-modem-parser.git"
+  }
 }
