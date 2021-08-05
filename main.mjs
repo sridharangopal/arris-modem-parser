@@ -112,7 +112,7 @@ export function sendArrisDataToInflux() {
                     .floatField('Correcteds', item.Correcteds)
                     .floatField('Uncorrectables', item.Uncorrectables)
 
-                console.log('   ' + point.toString())
+                // console.log('   ' + point.toString())
 
                 points.push(point);
             })
