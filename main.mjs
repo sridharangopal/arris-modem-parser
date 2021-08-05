@@ -26,7 +26,7 @@ const {
     post
 } = request
 
-
+const modem_ip = process.env.MODEM_IP
 const url = process.env.INFLUX_URL
 const token = process.env.INFLUX_TOKEN
 const org = process.env.INFLUX_ORG
@@ -40,9 +40,9 @@ writeApi.useDefaultTags({
     hostname: _hostname()
 })
 
-const loginUrl = "http://192.168.100.1/cgi-bin/basic_pwd_cgi"
+const loginUrl = "http://" + modem_ip + "/cgi-bin/basic_pwd_cgi"
 const auth = new Buffer.from(process.env.MODEM_USERNAME + ":" + process.env.MODEM_PASSWORD).toString("base64");
-const dataUrl = "http://192.168.100.1/cgi-bin/status_cgi"
+const dataUrl = "http://" + modem_ip + "/cgi-bin/status_cgi"
 var msg = {}
 const tableSelector = 'table'
 const options = {
