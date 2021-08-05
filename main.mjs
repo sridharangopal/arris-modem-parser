@@ -32,6 +32,7 @@ const token = process.env.INFLUX_TOKEN
 const org = process.env.INFLUX_ORG
 const bucketId = process.env.INFLUX_BUCKET_ID
 const writeFileToDisk = process.env.WRITE_FILE
+const writePointsToInflux = process.env.WRITE_TO_INFLUX
 const writeApi = new InfluxDB({
     url,
     token
@@ -49,11 +50,11 @@ const options = {
     rowForHeadings: 0, // extract th cells from this row for column headings (zero-based)
     ignoreHeadingRow: true, // Don't treat the heading row as data
     ignoreRows: [],
-    downstreamChannels: 32, //process.env.DOWNSTREAM_NUMBER,
-    upstreamChannels: 4 //process.env.UPSTREAM_NUMBER
+    downstreamChannels: process.env.DOWNSTREAM_CHANNELS,
+    upstreamChannels: process.env.UPSTREAM_CHANNELS
 }
-const jsonReponse = []
-const columnHeadings = []
+var jsonReponse = []
+var columnHeadings = []
 var cred_cookie = ""
 var $ = ""
 
@@ -100,7 +101,7 @@ export function sendArrisDataToInflux() {
 
             // Writing downstream data only to Influxdb Cloud
             jsonReponse.slice(0, options.downstreamChannels).map(item => {
-                const point = new Point('downstream')
+                var point = new Point('downstream')
                     .tag('deviceId', 'ARRIS SBV3202')
                     .tag('DCID', item.DCID)
                     .floatField('Freq', item.Freq.split(' ')[0])
@@ -111,14 +112,18 @@ export function sendArrisDataToInflux() {
                     .floatField('Correcteds', item.Correcteds)
                     .floatField('Uncorrectables', item.Uncorrectables)
 
+                console.log('   ' + point.toString())
+
                 points.push(point);
             })
 
-            try {
-                writeApi.writePoints(points)
-                writeApi.flush()
-            } catch (err) {
-                console.log(err)
+            if (writePointsToInflux == 'true') {
+                try {
+                    writeApi.writePoints(points)
+                    writeApi.flush()
+                } catch (err) {
+                    console.log(err)
+                }
             }
 
             if (writeFileToDisk === 'true') {
@@ -126,7 +131,7 @@ export function sendArrisDataToInflux() {
                 msg.payload = {
                     data: [
                         jsonReponse.slice(0, options.downstreamChannels).map(item => {
-                            const container = {
+                            var container = {
                                 measurement: 'downstream',
                                 tags: {
                                     deviceId: 'ARRIS SBV3202',
@@ -149,7 +154,7 @@ export function sendArrisDataToInflux() {
                         jsonReponse
                             .slice(options.downstreamChannels, options.downstreamChannels + options.upstreamChannels)
                             .map(item => {
-                                const container = {
+                                var container = {
                                     measurement: 'upstream',
                                     tags: {
                                         deviceId: 'ARRIS SBV3202',
@@ -186,7 +191,7 @@ export function sendArrisDataToInflux() {
 
 
     function getColHeadings(headingRow) {
-        const alreadySeen = {}
+        var alreadySeen = {}
 
         $(headingRow).find('td').each((j, cell) => {
             let tr = $(cell).text().trim()
@@ -204,7 +209,7 @@ export function sendArrisDataToInflux() {
 }
 
 function processRow(i, row) {
-    const rowJson = {}
+    var rowJson = {}
 
     if (options.ignoreHeadingRow && i === options.rowForHeadings) return
     // TODO: Process options.ignoreRows
