@@ -27,10 +27,10 @@ const {
 } = request
 
 
-const url = process.env.url
-const token = process.env.token
-const org = process.env.org
-const bucketId = process.env.bucketId
+const url = process.env.INFLUX_URL
+const token = process.env.INFLUX_TOKEN
+const org = process.env.INFLUX_ORG
+const bucketId = process.env.INFLUX_BUCKET_ID
 const writeFileToDisk = process.env.WRITE_FILE
 const writeApi = new InfluxDB({
     url,
@@ -82,7 +82,7 @@ post(loginUrl, {
             return console.log(err);
         }
 
-        // console.log("Response body from get request : " + body)
+        console.log("Response body from get request : " + body)
 
         $ = load(body)
 
@@ -97,7 +97,7 @@ post(loginUrl, {
         });
 
 
-        // Writing downstream data to Influxdb Cloud
+        // Writing downstream data only to Influxdb Cloud
         jsonReponse.slice(0, options.downstreamChannels).map(item => {
             const point = new Point('downstream')
                 .tag('deviceId', 'ARRIS SBV3202')
@@ -160,7 +160,7 @@ post(loginUrl, {
 
                         container.fields['Freq'] = item.Freq.split(' ')[0];
                         container.fields['Power'] = item.Power.split(' ')[0];
-                        // container.fields['ChannelType'] = item.SNR;
+                        container.fields['ChannelType'] = item.ChannelType;
                         container.fields['SymbolRate'] = item.Modulation.split(' ')[0];
                         container.fields['Modulation'] = item.Octets.split('Q')[0];
 
